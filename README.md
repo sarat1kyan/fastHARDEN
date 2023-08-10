@@ -25,25 +25,25 @@ Use Case:
 * You are knowledgeable about Linux system administration and understand the implications of the changes this script makes.
 * What the Script Does:
 
-Updates the System: It ensures that the system is up-to-date by applying the latest security patches.
-Installs Security Tools: Essential security tools, including a firewall (UFW or firewalld), fail2ban (intrusion prevention), and rkhunter (rootkit scanner) are installed.
-Configures Firewall: The script sets up firewall rules to allow necessary traffic (e.g., SSH) while blocking unauthorized incoming connections.
-Secures SSH: SSH configuration is hardened by disabling root login and password authentication, improving the security of remote access.
-Harden Sysctl Settings: Network and kernel parameters are adjusted to prevent certain types of attacks.
-Secure Shared Memory: Shared memory is configured with more restrictive permissions.
-Disable Core Dumps: Disables core dumps, which can be exploited in some attacks.
-Set Password Policy: Strengthens password policies for users.
-Enable Auditd: Enables system auditing for tracking system activities.
-Configure Log Monitoring: Sets up log monitoring for specific events, enhancing system visibility.
-Enable Automatic Updates: Enables automatic updates for security-related packages.
-Monitor File Changes: Sets up file integrity monitoring to detect modifications to critical system files.
-Harden Network Parameters: Further secures network-related settings.
-Disable USB Storage: Prevents the loading of USB storage modules.
-Enable System Process Accounting: Enables process accounting for tracking system processes.
-Set Restricted Permissions: Sets restricted permissions on key system binaries.
-Secure Cron Jobs: Applies secure permissions to cron directories and files.
-Disable System Accounts: Disables certain unnecessary system accounts.
-Disable Unused Network Protocols: Prevents the loading of unused network protocols.
+* Updates the System: It ensures that the system is up-to-date by applying the latest security patches.
+* Installs Security Tools: Essential security tools, including a firewall (UFW or firewalld), fail2ban (intrusion prevention), and rkhunter (rootkit scanner) are installed.
+* Configures Firewall: The script sets up firewall rules to allow necessary traffic (e.g., SSH) while blocking unauthorized incoming connections.
+* Secures SSH: SSH configuration is hardened by disabling root login and password authentication, improving the security of remote access.
+* Harden Sysctl Settings: Network and kernel parameters are adjusted to prevent certain types of attacks.
+* Secure Shared Memory: Shared memory is configured with more restrictive permissions.
+* Disable Core Dumps: Disables core dumps, which can be exploited in some attacks.
+* Set Password Policy: Strengthens password policies for users.
+* Enable Auditd: Enables system auditing for tracking system activities.
+* Configure Log Monitoring: Sets up log monitoring for specific events, enhancing system visibility.
+* Enable Automatic Updates: Enables automatic updates for security-related packages.
+* Monitor File Changes: Sets up file integrity monitoring to detect modifications to critical system files.
+* Harden Network Parameters: Further secures network-related settings.
+* Disable USB Storage: Prevents the loading of USB storage modules.
+* Enable System Process Accounting: Enables process accounting for tracking system processes.
+* Set Restricted Permissions: Sets restricted permissions on key system binaries.
+* Secure Cron Jobs: Applies secure permissions to cron directories and files.
+* Disable System Accounts: Disables certain unnecessary system accounts.
+* Disable Unused Network Protocols: Prevents the loading of unused network protocols.
 
       IMPORTANT:
 
