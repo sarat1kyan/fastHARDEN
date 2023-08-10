@@ -48,175 +48,220 @@ banner
 
 #!/bin/bash
 
-# Check if the script is run as root
-if [[ $EUID -ne 0 ]]; then
-    echo "This script must be run as root"
+# Determine the package manager
+if [ -x "$(command -v apt)" ]; then
+    package_manager="apt"
+    install_cmd="apt install"
+    ufw_cmd="ufw"
+    ufw_service="ufw"
+    auditd_service="auditd"
+    auditd_cmd="auditd"
+elif [ -x "$(command -v yum)" ]; then
+    package_manager="yum"
+    install_cmd="yum install"
+    ufw_cmd="firewalld"
+    ufw_service="firewalld"
+    auditd_service="auditd"
+    auditd_cmd="auditd"
+else
+    echo "Unsupported package manager. Exiting..."
     exit 1
 fi
 
-# Function to check if a command is available
-is_command_available() {
-    type -P $1 >/dev/null 2>&1
-    return $?
-}
+# Ensure the script is run as root
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run as root."
+    exit 1
+fi
 
-# Function to enable and start a service
-enable_and_start_service() {
-    service=$1
-    systemctl enable --quiet $service
-    systemctl start --quiet $service
-}
+# Update the system
+echo "Updating system..."
+if [ "$package_manager" = "apt" ]; then
+    apt update
+    apt upgrade -y
+elif [ "$package_manager" = "yum" ]; then
+    yum update -y
+fi
+echo "System update complete."
 
-# Function to allow a port in UFW
-allow_port_in_ufw() {
-    port=$1
-    ufw allow $port >/dev/null 2>&1
-}
+# Install essential security tools
+echo "Installing security tools..."
+$install_cmd $ufw_cmd fail2ban rkhunter -y
+echo "Security tools installed."
 
-# Function to restrict root access
-restrict_root_access() {
-    echo "PermitRootLogin no" >> /etc/ssh/sshd_config
-    echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
-    service ssh restart
-}
+# Enable the firewall
+echo "Setting up firewall..."
+if [ "$package_manager" = "apt" ]; then
+    $ufw_cmd default deny incoming
+    $ufw_cmd default allow outgoing
+    $ufw_cmd allow ssh
+    $ufw_cmd enable
+elif [ "$package_manager" = "yum" ]; then
+    systemctl enable $ufw_service
+    systemctl start $ufw_service
+    firewall-cmd --zone=public --add-service=ssh --permanent
+    firewall-cmd --reload
+fi
+echo "Firewall setup complete."
 
-# Function to secure sensitive system files
-secure_sensitive_files() {
-    chmod 600 /etc/shadow
-    chmod 600 /etc/gshadow
-    chmod 644 /etc/passwd
-    chmod 644 /etc/group
-    chmod 640 /etc/sudoers
-    chmod 600 /etc/ssh/ssh_host_*key*
-    chmod 600 /root/.ssh/authorized_keys
-    chmod 700 /root
-    chmod 700 /var/log
-}
+# Secure SSH
+echo "Securing SSH..."
+sed -i 's/^#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
+sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+service ssh restart
+echo "SSH secured."
 
-# Function to configure network intrusion detection
-configure_network_intrusion_detection() {
-    apt install snort -y
-    echo "alert icmp any any -> \$HOME_NET any (msg:\"ICMP traffic detected\"; sid:10000001;)" > /etc/snort/rules/local.rules
-    systemctl enable snort
-    systemctl start snort
-}
+# Harden sysctl settings
+echo "Harden sysctl settings..."
+echo "net.ipv4.ip_forward = 0" >> /etc/sysctl.conf
+echo "net.ipv4.conf.all.send_redirects = 0" >> /etc/sysctl.conf
+echo "net.ipv4.conf.default.send_redirects = 0" >> /etc/sysctl.conf
+sysctl -p
+echo "Sysctl settings hardened."
 
-# Function to set up log monitoring
-set_up_log_monitoring() {
-    apt install logwatch -y
-    cp /usr/share/logwatch/default.conf/logwatch.conf /etc/logwatch/conf/logwatch.conf
-    echo "MailTo = your_email@example.com" >> /etc/logwatch/conf/logwatch.conf
-}
+# Secure shared memory
+echo "Securing shared memory..."
+echo "none /run/shm tmpfs rw,noexec,nosuid,nodev 0 0" >> /etc/fstab
+mount -o remount /run/shm
+echo "Shared memory secured."
 
-# Function to secure the /tmp directory
-secure_tmp_directory() {
-    sed -i 's/\/tmp[[:space:]]/\/tmp[[:space:]]\/tmpfs[[:space:]]defaults,nodev,nosuid,noexec[[:space:]]0[[:space:]]0/' /etc/fstab
-    mount -o remount /tmp
-}
+# Disable core dumps
+echo "Disabling core dumps..."
+echo "* hard core 0" >> /etc/security/limits.conf
+echo "fs.suid_dumpable = 0" >> /etc/sysctl.conf
+sysctl -p
+echo "Core dumps disabled."
 
-# Function to configure system logging
-configure_system_logging() {
-    apt install auditd -y
-    systemctl enable auditd
-    systemctl start auditd
-}
+# Set password policy
+echo "Setting password policy..."
+$install_cmd libpam-pwquality -y
+sed -i 's/# minlen = 8/minlen = 12/' /etc/security/pwquality.conf
+sed -i 's/password requisite pam_pwquality.so retry=3/password requisite pam_pwquality.so retry=3 minlen=12 minclass=3 lcredit=-1 ucredit=-1 dcredit=-1 ocredit=-1/' /etc/pam.d/common-password
+echo "Password policy set."
 
-# Function to configure network security
-configure_network_security() {
-    systemctl disable avahi-daemon
-    systemctl disable cups
-    ufw allow 80/tcp
-    ufw allow 443/tcp
-    ufw allow 53/udp
-    ufw allow 123/udp
-    ufw --force enable
-    echo "net.ipv4.tcp_syncookies = 1" >> /etc/sysctl.conf
-    echo "net.ipv4.conf.all.accept_redirects = 0" >> /etc/sysctl.conf
-    echo "net.ipv4.conf.default.accept_redirects = 0" >> /etc/sysctl.conf
-    echo "net.ipv4.conf.all.send_redirects = 0" >> /etc/sysctl.conf
-    echo "net.ipv4.conf.default.send_redirects = 0" >> /etc/sysctl.conf
-    echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
-    echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.conf
-    sysctl -p
-}
+# Enable auditd for system auditing
+echo "Enabling auditd..."
+$install_cmd $auditd_cmd -y
+systemctl enable $auditd_service
+systemctl start $auditd_service
+echo "Auditd enabled."
 
-# Function to enforce password policies
-enforce_password_policies() {
-    apt install libpam-pwquality -y
-    echo "password requisite pam_pwquality.so retry=3" >> /etc/pam.d/common-password
-    echo "password requisite pam_pwquality.so minlen=12" >> /etc/pam.d/common-password
-    echo "password requisite pam_pwquality.so ucredit=-1 lcredit=-1 dcredit=-1 ocredit=-1" >> /etc/pam.d/common-password
-    echo "password requisite pam_pwquality.so minclass=3" >> /etc/pam.d/common-password
-}
+# Configure log monitoring (using rsyslog)
+echo "Configuring log monitoring..."
+$install_cmd rsyslog -y
+echo "# Log authpriv messages to a separate file
+authpriv.* /var/log/auth.log
+# Log sudo commands
+if \$programname == 'sudo' then /var/log/sudo.log
+# Log SSH activity
+if \$programname == 'sshd' then /var/log/ssh.log" > /etc/rsyslog.d/10-custom.conf
+systemctl restart rsyslog
+echo "Log monitoring configured."
 
-# Function to harden SSH configuration
-harden_ssh() {
-    echo "Protocol 2" >> /etc/ssh/sshd_config
-    echo "PermitRootLogin no" >> /etc/ssh/sshd_config
-    echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
-    echo "AllowUsers your_username" >> /etc/ssh/sshd_config
-    service ssh restart
-}
+# Enable automatic updates for security packages
+echo "Enabling automatic updates..."
+echo "APT::Periodic::Update-Package-Lists \"1\";
+APT::Periodic::Unattended-Upgrade \"1\";" >> /etc/apt/apt.conf.d/20auto-upgrades
+echo "Automatic updates enabled."
 
-# Function to restrict access to system binaries
-restrict_access_to_binaries() {
-    chmod 750 /bin/*
-    chmod 750 /usr/bin/*
-    chmod 750 /sbin/*
-    chmod 750 /usr/sbin/*
-}
+# Monitor file changes (using inotify)
+echo "Setting up file integrity monitoring..."
+$install_cmd inotify-tools -y
+echo "#!/bin/bash
+inotifywait -m -r -e modify,create,delete,attrib,close_write /etc /bin /usr/bin /sbin /usr/sbin |
+while read path action file; do
+    echo \"\$path\$file has been \$(echo \$action | sed 's/CREATE/created/;s/DELETE/deleted/;s/MODIFY/modified/;s/ATTRIB/modified/;s/CLOSE_WRITE/modified/')\"
+done" > /usr/local/bin/file-monitor.sh
+chmod +x /usr/local/bin/file-monitor.sh
+echo "File integrity monitoring script created."
 
-# Function to implement process monitoring
-implement_process_monitoring() {
-    apt install psacct -y
-    systemctl enable psacct
-    systemctl start psacct
-}
+# Harden network parameters
+echo "Harden network parameters..."
+echo "net.ipv4.conf.default.rp_filter=1
+net.ipv4.conf.all.rp_filter=1
+net.ipv4.icmp_echo_ignore_broadcasts=1
+net.ipv4.icmp_ignore_bogus_error_responses=1
+net.ipv4.conf.all.accept_source_route=0
+net.ipv6.conf.default.accept_source_route=0
+net.ipv6.conf.all.accept_source_route=0
+net.ipv4.conf.default.accept_redirects=0
+net.ipv4.conf.all.accept_redirects=0
+net.ipv6.conf.default.accept_redirects=0
+net.ipv6.conf.all.accept_redirects=0
+net.ipv4.conf.default.secure_redirects=0
+net.ipv4.conf.all.secure_redirects=0" >> /etc/sysctl.conf
+sysctl -p
+echo "Network parameters hardened."
 
-# Function to disable unnecessary services
-disable_unnecessary_services() {
-    systemctl disable bluetooth
-    systemctl disable cups
-    systemctl disable cups-browsed
-    systemctl disable avahi-daemon
-    systemctl disable avahi-daemon.socket
-}
+# Disable USB storage
+echo "Disabling USB storage..."
+echo "install usb-storage /bin/false" > /etc/modprobe.d/disable-usb-storage.conf
+echo "USB storage disabled."
 
-# Function to configure kernel parameters
-configure_kernel_parameters() {
-    echo "kernel.exec-shield = 1" >> /etc/sysctl.conf
-    echo "kernel.randomize_va_space = 2" >> /etc/sysctl.conf
-    echo "net.ipv4.ip_forward = 0" >> /etc/sysctl.conf
-    sysctl -p
-}
+# Enable system process accounting
+echo "Enabling process accounting..."
+$install_cmd acct -y
+systemctl enable acct
+systemctl start acct
+echo "Process accounting enabled."
 
-# Function to enforce strong user authentication
-enforce_strong_user_authentication() {
-    echo "auth required pam_tally2.so deny=5 unlock_time=900" >> /etc/pam.d/common-auth
-    echo "auth required pam_unix.so nullok_secure use_first_pass" >> /etc/pam.d/common-auth
-    echo "auth required pam_tally2.so onerr=succeed file=/var/log/tallylog" >> /etc/pam.d/common-account
-}
+# Set restricted permissions on key system binaries
+echo "Setting restricted permissions on key system binaries..."
+chmod 700 /usr/bin/wall
+chmod 700 /usr/bin/whereis
+chmod 700 /usr/bin/who
+chmod 700 /usr/bin/whoami
+chmod 700 /usr/bin/locate
+echo "Restricted permissions set on key system binaries."
 
-# Apply all security measures
-apply_all_security_measures() {
-    restrict_root_access
-    secure_sensitive_files
-    configure_network_intrusion_detection
-    set_up_log_monitoring
-    secure_tmp_directory
-    configure_system_logging
-    configure_network_security
-    enforce_password_policies
-    harden_ssh
-    restrict_access_to_binaries
-    implement_process_monitoring
-    disable_unnecessary_services
-    configure_kernel_parameters
-    enforce_strong_user_authentication
-}
+# Secure cron jobs
+echo "Securing cron jobs..."
+chown root:root /etc/crontab
+chmod og-rwx /etc/crontab
+chown root:root /etc/cron.hourly
+chmod og-rwx /etc/cron.hourly
+chown root:root /etc/cron.daily
+chmod og-rwx /etc/cron.daily
+chown root:root /etc/cron.weekly
+chmod og-rwx /etc/cron.weekly
+chown root:root /etc/cron.monthly
+chmod og-rwx /etc/cron.monthly
+chown root:root /etc/cron.d
+chmod og-rwx /etc/cron.d
+echo "Cron jobs secured."
 
-# Apply security measures
-apply_all_security_measures
+# Disable system accounts
+echo "Disabling system accounts..."
+passwd -l games
+passwd -l ftp
+passwd -l irc
+passwd -l news
+passwd -l uucp
+echo "System accounts disabled."
 
-# Notify user that the script has completed
-echo "System hardening completed."
+# Disable unnecessary services
+echo "Disabling unnecessary services..."
+if [ "$package_manager" = "apt" ]; then
+    $install_cmd sysv-rc-conf -y
+    sysv-rc-conf --level 2-5 apache2 off  # Example: Disabling Apache (adjust as needed)
+    sysv-rc-conf --level 2-5 smbd off    # Example: Disabling Samba (adjust as needed)
+    # Add more services to disable
+elif [ "$package_manager" = "yum" ]; then
+    systemctl disable apache2     # Example: Disabling Apache (adjust as needed)
+    systemctl stop apache2
+    systemctl disable smbd       # Example: Disabling Samba (adjust as needed)
+    systemctl stop smbd
+    # Add more services to disable
+fi
+echo "Unnecessary services disabled."
+
+# Improve filesystem security
+echo "Improving filesystem security..."
+chmod 700 /var/log/*  # Restrict access to log files
+chmod 700 /var/log
+chown root:adm /var/log
+chmod 700 /var/adm
+chown root:adm /var/adm
+echo "Filesystem security improved."
+
+echo "System hardening complete."
