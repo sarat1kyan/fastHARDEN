@@ -11,6 +11,9 @@
                                                                
 
 # fastHARDEN
+
+            THIS SCRIPT WAS IN TESTING DO NOT USE IT ON PRODUCTION SERVERS
+
 The script is designed to enforce security measures by high-lvl hardening at first response, when everything f*cked up
 
 Monitoring running services, open ports, and preventing new services from starting. It also closes all other ports and applies restrictions on user creation, user privilege changes, and kernel file modifications. The prevention measures remain in effect until you stop the script with Ctrl+C.
