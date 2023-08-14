@@ -1,53 +1,5 @@
 #!/bin/bash
 
-echo "////////////////"
-
-banner1() {
-  local text="$@"
-  local length=$(( ${#text} + 2 ))
-  local line=$(printf '%*s' "$length" '' | tr ' ' '-')
-  echo "+$line+"
-  printf "| %s |\n" "$(date)"
-  echo "+$line+"
-  printf "|$bold%s$reset|\n" "$text"
-  echo "+$line+"
-}
-
-
-#clolors
-white='\e[1;37m'
-green='\e[0;32m'
-blue='\e[1;34m'
-red='\e[1;31m'
-yellow='\e[1;33m' 
-echo ""
-echo ""
-banner() {
-	echo -e $'\e[1;33m\e[0m\e[1;37m        █████▒▄▄▄        ██████ ▄▄▄█████▓ ██░ ██  ▄▄▄       ██▀███  ▓█████▄ ▓█████  ███▄    █     \e[0m'
-	echo -e $'\e[1;33m\e[0m\e[1;37m      ▓██   ▒▒████▄    ▒██    ▒ ▓  ██▒ ▓▒▓██░ ██▒▒████▄    ▓██ ▒ ██▒▒██▀ ██▌▓█   ▀  ██ ▀█   █      \e[0m'
-	echo -e $'\e[1;33m\e[0m\e[1;37m      ▒████ ░▒██  ▀█▄  ░ ▓██▄   ▒ ▓██░ ▒░▒██▀▀██░▒██  ▀█▄  ▓██ ░▄█ ▒░██   █▌▒███   ▓██  ▀█ ██▒     \e[0m'
-	echo -e $'\e[1;33m\e[0m\e[1;37m      ░▓█▒  ░░██▄▄▄▄██   ▒   ██▒░ ▓██▓ ░ ░▓█ ░██ ░██▄▄▄▄██ ▒██▀▀█▄  ░▓█▄   ▌▒▓█  ▄ ▓██▒  ▐▌██▒     \e[0m'
-	echo -e $'\e[1;33m\e[0m\e[1;37m      ░▒█░    ▓█   ▓██▒▒██████▒▒  ▒██▒ ░ ░▓█▒░██▓ ▓█   ▓██▒░██▓ ▒██▒░▒████▓ ░▒████▒▒██░   ▓██░     \e[0m'
-	echo -e $'\e[1;33m\e[0m\e[1;37m       ▒ ░    ▒▒   ▓▒█░▒ ▒▓▒ ▒ ░  ▒ ░░    ▒ ░░▒░▒ ▒▒   ▓▒█░░ ▒▓ ░▒▓░ ▒▒▓  ▒ ░░ ▒░ ░░ ▒░   ▒ ▒      \e[0m'
-	echo -e $'\e[1;33m\e[0m\e[1;37m       ░       ▒   ▒▒ ░░ ░▒  ░ ░    ░     ▒ ░▒░ ░  ▒   ▒▒ ░  ░▒ ░ ▒░ ░ ▒  ▒  ░ ░  ░░ ░░   ░ ▒░     \e[0m'
-	echo -e $'\e[1;33m\e[0m\e[1;37m       ░ ░     ░   ▒   ░  ░  ░    ░       ░  ░░ ░  ░   ▒     ░░   ░  ░ ░  ░    ░      ░   ░ ░      \e[0m'
-	echo -e $'\e[1;33m\e[0m\e[1;37m                   ░  ░      ░            ░  ░  ░      ░  ░   ░        ░       ░  ░         ░      \e[0m'
-	echo -e $'\e[1;33m\e[0m\e[1;37m                     ░       ░        ░   ░  ░  ░     \e[0m'
-	
-	echo ""    
-	echo -e $'\e[1;33m\e[0m\e[1;33m    ██████████\e[0m'"\e[96m██████████"'\e[1;33m\e[0m\e[1;31m██████████\e[0m' '\e[1;32m\e[0m\e[1;32m enforce security measures by fast high-lvl hardening \e[0m''\e[1;37m\e[0m\e[1;37m \e[0m'                                       
-	echo ""
-	echo -e $'\e[1;33m\e[0m\e[1;33m  [ \e[0m\e[1;32m Follow on Github :- https://github.com/54R4T1KY4N \e[0m \e[1;32m\e[0m\e[1;33m] \e[0m'
-	echo ""
-	echo -e $'\e[1;37m\e[0m\e[1;37m    +-+-+-+-+-+-+-+ >>\e[0m'
-	echo -e "\e[93m    fastHARDEN |1|.|3| stable"      
-	echo -e $'\e[1;37m\e[0m\e[1;37m    +-+-+-+-+-+-+-+ >>\e[0m' 
-	echo ""                                                
-}
-banner 
-
-#!/bin/bash
-
 # Determine the package manager
 if [ -x "$(command -v apt)" ]; then
     package_manager="apt"
