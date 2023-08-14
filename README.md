@@ -47,5 +47,3 @@ Backup: Always back up your system before running this script to mitigate the ri
 Test: Test the script in a non-production environment to verify compatibility and functionality.
 Regular Monitoring: Continuously monitor your system after applying these changes to detect any unexpected issues or threats.
 Stay Updated: Regularly update your system and security tools to stay protected against emerging threats.
-
-      p.s. if there is any problem while running just remove the banner part ;)
